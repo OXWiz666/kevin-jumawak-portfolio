@@ -1,5 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/contributions", () => ({
@@ -11,6 +13,13 @@ const { default: ExperiencePage } = await import("@/app/experience/page");
 const { default: ContactPage } = await import("@/app/contact/page");
 
 describe("portfolio routes", () => {
+  it("uses a personal KJ monogram for the browser tab icon", () => {
+    const icon = readFileSync(resolve(process.cwd(), "app/icon.svg"), "utf8");
+
+    expect(icon).toContain('aria-label="KJ monogram"');
+    expect(icon).toContain("<title>KJ monogram</title>");
+  });
+
   it("presents the editorial headline and contact route on home", () => {
     const html = renderToStaticMarkup(createElement(Home));
     expect(html).toContain("I turn complex ideas into");
