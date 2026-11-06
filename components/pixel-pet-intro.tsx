@@ -1,8 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DISPLAY_NAME, ROLE, STACK } from "@/lib/data";
+import { getIntroMode } from "@/lib/intro";
 
 const PixelPetPlayer = dynamic(
   () => import("@/components/remotion/pixel-pet-player"),
@@ -25,16 +26,27 @@ type Phase = "idle" | "playing" | "leaving";
  * Skipped entirely for reduced-motion visitors.
  */
 export function PixelPetIntro() {
-  const [phase, setPhase] = useState<Phase>("idle");
+  // Start rendered so the server HTML contains an opaque gate. The root
+  // bootstrap decides whether CSS shows it before React takes over.
+  const [phase, setPhase] = useState<Phase>("playing");
+  const shouldPlayRef = useRef(true);
+  const skipButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let hasSeenIntro = false;
     try {
-      if (sessionStorage.getItem(SEEN_KEY)) return;
-    } catch {
-      return;
-    }
-    setPhase("playing");
+      hasSeenIntro = sessionStorage.getItem(SEEN_KEY) === "1";
+    } catch {}
+
+    const mode = getIntroMode({
+      pathname: window.location.pathname,
+      hasSeenIntro,
+      prefersReducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+    });
+
+    shouldPlayRef.current = mode === "play";
+    document.documentElement.dataset.introMode = mode;
+    if (mode === "skip") setPhase("idle");
   }, []);
 
   const dismiss = useCallback(() => {
@@ -42,12 +54,18 @@ export function PixelPetIntro() {
   }, []);
 
   useEffect(() => {
-    if (phase !== "playing") return;
+    if (phase !== "playing" || !shouldPlayRef.current) return;
     const root = document.documentElement;
-    root.classList.add("intro-active");
+    root.dataset.introMode = "play";
 
     const auto = window.setTimeout(dismiss, PLAY_MS);
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        skipButtonRef.current?.focus({ preventScroll: true });
+        return;
+      }
+
       if (
         event.key === "Escape" ||
         event.key === "Enter" ||
@@ -62,9 +80,20 @@ export function PixelPetIntro() {
     return () => {
       window.clearTimeout(auto);
       window.removeEventListener("keydown", onKey);
-      root.classList.remove("intro-active");
     };
   }, [phase, dismiss]);
+
+  useEffect(() => {
+    if (phase === "idle" || !shouldPlayRef.current) return;
+
+    const shell = document.querySelector<HTMLElement>(".shell");
+    shell?.setAttribute("inert", "");
+    if (phase === "playing") {
+      skipButtonRef.current?.focus({ preventScroll: true });
+    }
+
+    return () => shell?.removeAttribute("inert");
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== "leaving") return;
@@ -72,6 +101,7 @@ export function PixelPetIntro() {
       try {
         sessionStorage.setItem(SEEN_KEY, "1");
       } catch {}
+      document.documentElement.dataset.introMode = "skip";
       setPhase("idle");
     }, EXIT_MS);
     return () => window.clearTimeout(done);
@@ -106,6 +136,7 @@ export function PixelPetIntro() {
         </div>
       </div>
       <button
+        ref={skipButtonRef}
         type="button"
         className="pet-intro-skip"
         onClick={(event) => {

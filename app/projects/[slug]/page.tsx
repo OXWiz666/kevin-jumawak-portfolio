@@ -1,20 +1,44 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Carousel } from "@/components/carousel";
-import { ForgeKeepMark } from "@/components/forgekeep-mark";
-import { Page, PageHeader } from "@/components/page";
-import { PROJECTS, getProject } from "@/lib/data";
+import { Page } from "@/components/page";
+import {
+  PROJECTS,
+  PROJECT_STATUS_LABELS,
+  getProject,
+} from "@/lib/data";
+
 export function generateStaticParams() {
   return PROJECTS.map((project) => ({ slug: project.slug }));
 }
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  return { title: getProject(slug)?.title ?? "Project" };
+  const project = getProject(slug);
+  return {
+    title: project?.title ?? "Project",
+    description: project?.summary,
+  };
 }
+
+function sectionId(title: string) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+function monogram(title: string) {
+  return title
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export default async function ProjectPage({
   params,
 }: {
@@ -23,83 +47,90 @@ export default async function ProjectPage({
   const { slug } = await params;
   const project = getProject(slug);
   if (!project) notFound();
+
+  const projectIndex = PROJECTS.findIndex((item) => item.slug === project.slug);
+  const nextProject = PROJECTS[(projectIndex + 1) % PROJECTS.length];
+
   return (
     <Page>
-      <PageHeader
-        back={{ href: "/projects", label: "All projects" }}
-        title={project.title}
-        intro={project.summary}
-      />
-      <div className="stack-v gap-40">
-        {project.slug === "forgekeep" && <ForgeKeepMark variant="hero" />}
-        <div className="niche">
-          <span className="chip chip-dark">{project.category}</span>
-          {project.status === "in-development" && (
-            <span className="chip chip-light">In Development</span>
-          )}
-          {project.liveUrl && (
-            <a
-              className="chip chip-light"
-              href={project.liveUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Live website
-            </a>
-          )}
-          {project.githubUrl && (
-            <a
-              className="chip chip-light"
-              href={project.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-          )}
-        </div>
+      <article className="case-study">
+        <header className="case-hero">
+          <Link href="/projects" className="back" transitionTypes={["nav-back"]}>
+            ← All projects
+          </Link>
+          <span className="case-kicker">
+            {String(projectIndex + 1).padStart(2, "0")} / {String(PROJECTS.length).padStart(2, "0")} · Case study
+          </span>
+          <div className="case-hero-grid">
+            <div className="case-heading">
+              <div className="case-title-line">
+                <h1>{project.title}</h1>
+                <span aria-hidden="true">↗</span>
+              </div>
+              <p>{project.summary}</p>
+              <div className="case-actions">
+                {project.liveUrl && (
+                  <a className="btn btn-dark" href={project.liveUrl} target="_blank" rel="noreferrer">
+                    Visit live product <span aria-hidden="true">↗</span>
+                  </a>
+                )}
+                {project.githubUrl && (
+                  <a className="btn btn-light" href={project.githubUrl} target="_blank" rel="noreferrer">
+                    View repository <span aria-hidden="true">↗</span>
+                  </a>
+                )}
+              </div>
+            </div>
+            <aside className="case-facts" aria-label="Project details">
+              <div><span>Status</span><strong className={`status-badge status-${project.status}`}><i className="status-dot" />{PROJECT_STATUS_LABELS[project.status]}</strong></div>
+              <div><span>Type</span><strong>{project.category}</strong></div>
+              <div><span>Stack</span><strong>{project.technologies.join(" · ")}</strong></div>
+            </aside>
+          </div>
+        </header>
+
         {project.images.length ? (
-          <section className="gallery">
-            <span className="label">Official site preview</span>
-            <Carousel
-              images={project.images}
-              alt={project.imageAlt ?? `${project.title} project preview`}
-            />
+          <section className="case-media" aria-labelledby="case-preview-title">
+            <span className="case-section-label" id="case-preview-title">Product preview</span>
+            <Carousel images={project.images} alt={project.imageAlt ?? `${project.title} preview`} />
           </section>
         ) : (
-          <p className="placeholder">
-            Screenshots are not publicly available yet.
-          </p>
-        )}
-        {project.sections.map((section) => (
-          <section className="stack-v gap-16" key={section.title}>
-            <h2 className="label">{section.title}</h2>
-            {section.paragraphs.map((paragraph) => (
-              <p className="lead" key={paragraph}>
-                {paragraph}
-              </p>
-            ))}
-            {section.items && (
-              <ul className="bullets">
-                {section.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            )}
+          <section className="case-placeholder" aria-label={`${project.title} project identity`}>
+            <span>{monogram(project.title)}</span>
+            <p>{project.category}</p>
           </section>
-        ))}
-        <section className="stack-v gap-16">
-          <h2 className="label">Technology stack</h2>
-          {project.technologies.length ? (
-            <div className="kv">
-              <span>Tools</span>
-              <span>{project.technologies.join(", ")}</span>
-            </div>
-          ) : (
-            <p className="placeholder">Not publicly available yet.</p>
-          )}
-        </section>
-      </div>
+        )}
+
+        <div className="case-body">
+          <aside className="case-index">
+            <span className="case-section-label">Inside the project</span>
+            <nav aria-label="Case study sections">
+              {project.sections.map((section, index) => (
+                <a href={`#${sectionId(section.title)}`} key={section.title}>
+                  <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
+                </a>
+              ))}
+            </nav>
+          </aside>
+          <div className="case-content">
+            {project.sections.map((section, index) => (
+              <section id={sectionId(section.title)} key={section.title}>
+                <span className="case-section-label">{String(index + 1).padStart(2, "0")}</span>
+                <h2>{section.title}</h2>
+                {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                {section.items && (
+                  <ul>{section.items.map((item) => <li key={item}>{item}</li>)}</ul>
+                )}
+              </section>
+            ))}
+          </div>
+        </div>
+
+        <Link className="next-project" href={`/projects/${nextProject.slug}`}>
+          <span>Next project</span>
+          <strong>{nextProject.title} <i aria-hidden="true">↗</i></strong>
+        </Link>
+      </article>
     </Page>
   );
 }

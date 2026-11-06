@@ -11,11 +11,17 @@ describe("project routes", () => {
     expect(html).toContain("ForgeKeep Wallet");
     expect(html).toContain("In Development");
   });
-  it("renders readable unavailable project content", async () => {
+  it("renders a concise concept case study without placeholder sections", async () => {
     const page = await ProjectPage({
       params: Promise.resolve({ slug: "draftiq" }),
     });
-    expect(renderToStaticMarkup(page)).toContain("Not publicly available yet.");
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Dota 2");
+    expect(html).toContain("Concept");
+    expect(html).not.toContain("Not publicly available yet.");
+    expect(html).not.toContain("Lessons learned");
+    expect(html).not.toContain("Engineering challenges");
   });
   it("uses official ForgeKeep visual metadata and verified feature content", () => {
     const forgeKeep = PROJECTS.find((project) => project.slug === "forgekeep");

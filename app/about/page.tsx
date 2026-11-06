@@ -3,7 +3,6 @@ import { PhotoStack } from "@/components/photo-stack";
 import {
   ABOUT_INTRO,
   ABOUT_SUMMARY,
-  DISPLAY_NAME,
   LOCATION,
   ROLE,
 } from "@/lib/data";
@@ -11,12 +10,16 @@ export const metadata = { title: "About" };
 export default function AboutPage() {
   return (
     <Page>
-      <PageHeader back={{ href: "/", label: "Home" }} title="More about me" />
-      <section className="stack-v gap-24">
+      <PageHeader
+        back={{ href: "/", label: "Home" }}
+        eyebrow="About / 2026"
+        title="A product-minded engineer from General Santos."
+      />
+      <section className="about-editorial">
         <PhotoStack />
-        <div className="identity">
+        <div className="identity about-identity">
           <div className="stack-v gap-4">
-            <span className="identity-name">{DISPLAY_NAME}</span>
+            <span className="identity-name">Profile</span>
             <span className="identity-role">
               {ROLE} · {LOCATION}
             </span>
