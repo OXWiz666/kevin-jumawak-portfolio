@@ -199,15 +199,15 @@ export function HitCounter() {
           aria-hidden="true"
         />
       </button>
-      <p className="hit-month">
-        {state === "local" ? (
-          <><span className="hit-mode">Local</span> · saved in this browser</>
-        ) : state === "success" ? (
+      {state !== "local" && (
+        <p className="hit-month">
+          {state === "success" ? (
           <>This month · {totals?.monthly}</>
-        ) : (
-          <>Loading activity…</>
-        )}
-      </p>
+          ) : (
+            <>Loading activity…</>
+          )}
+        </p>
+      )}
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>

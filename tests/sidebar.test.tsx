@@ -91,4 +91,29 @@ describe("Sidebar drawer", () => {
     expect(sidebar.classList.contains("is-collapsed")).toBe(false);
     expect(screen.queryByRole("button", { name: "Show sidebar" })).toBeNull();
   });
+
+  it("opens a direct-email popover and keeps activity above the location footer", async () => {
+    mockMatchMedia();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 503 })),
+    );
+    const user = userEvent.setup();
+
+    render(<Sidebar />);
+
+    await user.click(screen.getByRole("button", { name: "Contact me" }));
+    const popover = screen.getByRole("dialog", { name: "Contact Kevin Jumawak" });
+    const emailLink = screen.getByRole("link", { name: "Email Kevin" });
+
+    expect(popover).toBeTruthy();
+    expect(emailLink.getAttribute("href")).toContain("mailto:alphadaryl0425@gmail.com");
+    expect(screen.queryByText("Email copied")).toBeNull();
+
+    const activity = document.querySelector(".sidebar-foot .sidebar-activity");
+    const location = document.querySelector(".sidebar-foot-place");
+    expect(activity).toBeTruthy();
+    expect(location).toBeTruthy();
+    expect(activity!.compareDocumentPosition(location!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

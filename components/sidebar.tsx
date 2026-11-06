@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { SlidingText } from "@animate-ui/react/primitives/texts/sliding";
 import { NavIcons } from "@/components/icons";
 import { HitCounter } from "@/components/hit-counter";
@@ -79,20 +79,18 @@ export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [contactOpen, setContactOpen] = useState(false);
+  const contactPopoverId = useId();
   useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!contactOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setContactOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [contactOpen]);
   const closeDrawer = () => setOpen(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(EMAIL);
-      setCopied(true);
-      clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.location.href = `mailto:${EMAIL}`;
-    }
-  }
 
   return (
     <>
@@ -165,17 +163,33 @@ export function Sidebar() {
             <span className="dot" />
             Available for work
           </div>
-          <button
-            className={`sidebar-cta outline-action${copied ? " is-copied" : ""}`}
-            type="button"
-            onClick={copy}
-          >
-            <NavIcons.contact />
-            <span className="sidebar-cta-label">
-              {copied ? "Email copied" : "Contact me"}
-            </span>
-            <span className="sidebar-cta-dot" />
-          </button>
+          <div className="sidebar-contact">
+            <button
+              className="sidebar-cta outline-action"
+              type="button"
+              aria-expanded={contactOpen}
+              aria-controls={contactPopoverId}
+              onClick={() => setContactOpen((current) => !current)}
+            >
+              <NavIcons.contact />
+              <span className="sidebar-cta-label">Contact me</span>
+              <span className="sidebar-cta-dot" />
+            </button>
+            {contactOpen && (
+              <div
+                className="contact-popover"
+                id={contactPopoverId}
+                role="dialog"
+                aria-label="Contact Kevin Jumawak"
+              >
+                <span>Start an email conversation</span>
+                <a href={`mailto:${EMAIL}?subject=${encodeURIComponent("Portfolio inquiry")}`}>
+                  <NavIcons.contact />
+                  Email Kevin
+                </a>
+              </div>
+            )}
+          </div>
           <nav className="nav" aria-label="Main">
             <div className="nav-group">
               {items.map((item) => {
@@ -208,12 +222,12 @@ export function Sidebar() {
               })}
             </div>
           </nav>
-          <div className="sidebar-activity">
-            <span className="nav-label">Activity</span>
-            <HitCounter />
-            <SitePresence />
-          </div>
           <div className="sidebar-foot">
+            <div className="sidebar-activity sidebar-activity--footer">
+              <span className="nav-label">Activity</span>
+              <HitCounter />
+              <SitePresence />
+            </div>
             <div className="sidebar-foot-text">
               <span className="sidebar-foot-place">{LOCATION}</span>
               <span>{TIMEZONE}</span>
