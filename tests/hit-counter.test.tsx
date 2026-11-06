@@ -80,7 +80,8 @@ describe("HitCounter", () => {
     render(<HitCounter />);
 
     const button = await screen.findByRole("button", { name: /hit me/i });
-    expect(await screen.findByText("Local")).toBeTruthy();
+    await screen.findByRole("button", { name: /hit me/i });
+    expect(screen.queryByText(/saved in this browser/i)).toBeNull();
     expect(button.getAttribute("disabled")).toBeNull();
 
     await user.click(button);
