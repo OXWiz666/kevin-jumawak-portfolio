@@ -7,10 +7,11 @@ export default function ContactPage() {
     <Page>
       <PageHeader
         back={{ href: "/", label: "Home" }}
-        title="Let’s connect"
-        intro="For a conversation about software, systems, or collaboration."
+        eyebrow="Contact / Open to work"
+        title={<>Have an idea worth <span className="serif">building?</span></>}
+        intro="I’m interested in meaningful projects, thoughtful engineering, and opportunities to create something useful."
       />
-      <section className="stack-v gap-16">
+      <section className="contact-actions">
         <CopyEmail className="btn btn-dark" href={`mailto:${EMAIL}`}>
           Copy {EMAIL}
         </CopyEmail>

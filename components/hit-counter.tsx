@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { NavIcons } from "@/components/icons";
 
 type HitTotals = { lifetime: number; monthly: number; month: string };
-type HitState = "loading" | "success" | "unavailable";
+type HitState = "loading" | "success" | "local";
 
-const COOLDOWN_MS = 1_500;
-const COOLDOWN_KEY = "portfolio-hit-cooldown-until";
+const LOCAL_POKE_KEY = "portfolio-local-pokes";
+const POKE_MESSAGES = [
+  "Mahurot ang token oy bomboang",
+  "Tama na, kapoy kayka",
+  "Agay, sakit na",
+  "Hoy! sigeg pindot mahurot ang token",
+];
 
 function isHitResponse(value: unknown): value is {
   kind: "success";
@@ -41,40 +47,34 @@ async function requestHit(method: "GET" | "POST"): Promise<HitTotals | null> {
   }
 }
 
-function readCooldown(): number {
+function readLocalPokes(): number {
   try {
-    const value = Number(window.localStorage.getItem(COOLDOWN_KEY));
-    return Number.isFinite(value) && value > Date.now() ? value : 0;
+    const value = Number(window.localStorage.getItem(LOCAL_POKE_KEY));
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
   } catch {
     return 0;
   }
 }
 
-function saveCooldown(until: number) {
+function saveLocalPokes(value: number) {
   try {
-    window.localStorage.setItem(COOLDOWN_KEY, String(until));
+    window.localStorage.setItem(LOCAL_POKE_KEY, String(value));
   } catch {}
 }
 
 export function HitCounter() {
   const [state, setState] = useState<HitState>("loading");
   const [totals, setTotals] = useState<HitTotals | null>(null);
-  const [coolingDown, setCoolingDown] = useState(false);
-  const [isHit, setIsHit] = useState(false);
+  const [pulse, setPulse] = useState(0);
+  const [feedback, setFeedback] = useState<{ id: number; text: string } | null>(null);
   const [announcement, setAnnouncement] = useState("");
-  const cooldownTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const animationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const localPokes = useRef(0);
+  const feedbackIndex = useRef(0);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     let active = true;
-    const until = readCooldown();
-    if (until) {
-      setCoolingDown(true);
-      cooldownTimer.current = setTimeout(
-        () => active && setCoolingDown(false),
-        until - Date.now(),
-      );
-    }
+    localPokes.current = readLocalPokes();
 
     requestHit("GET").then((nextTotals) => {
       if (!active) return;
@@ -82,65 +82,132 @@ export function HitCounter() {
         setTotals(nextTotals);
         setState("success");
       } else {
-        setState("unavailable");
+        setTotals({ lifetime: localPokes.current, monthly: 0, month: "local" });
+        setState("local");
       }
     });
 
     return () => {
       active = false;
-      clearTimeout(cooldownTimer.current);
-      clearTimeout(animationTimer.current);
     };
   }, []);
 
+  useEffect(() => () => clearTimeout(feedbackTimer.current), []);
+
   async function hit() {
-    if (state !== "success" || coolingDown) return;
+    if (state === "loading") return;
+    setPulse((value) => value + 1);
+    const nextFeedback = {
+      id: feedbackIndex.current,
+      text: POKE_MESSAGES[feedbackIndex.current % POKE_MESSAGES.length],
+    };
+    feedbackIndex.current += 1;
+    setFeedback(nextFeedback);
+    clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = setTimeout(() => setFeedback(null), 1100);
 
-    const until = Date.now() + COOLDOWN_MS;
-    saveCooldown(until);
-    setCoolingDown(true);
-    setIsHit(true);
-    clearTimeout(animationTimer.current);
-    animationTimer.current = setTimeout(() => setIsHit(false), 520);
-    clearTimeout(cooldownTimer.current);
-    cooldownTimer.current = setTimeout(() => setCoolingDown(false), COOLDOWN_MS);
-
-    const nextTotals = await requestHit("POST");
-    if (!nextTotals) {
-      setState("unavailable");
-      setAnnouncement("Hit counter is temporarily unavailable.");
+    if (state === "local") {
+      const nextCount = localPokes.current + 1;
+      localPokes.current = nextCount;
+      saveLocalPokes(nextCount);
+      setTotals({ lifetime: nextCount, monthly: 0, month: "local" });
+      setAnnouncement(`${nextFeedback.text}. ${nextCount} local pokes.`);
       return;
     }
 
-    setTotals(nextTotals);
-    setAnnouncement(`Hit registered. ${nextTotals.lifetime} total hits.`);
+    const nextTotals = await requestHit("POST");
+    if (!nextTotals) {
+      const nextCount = localPokes.current + 1;
+      localPokes.current = nextCount;
+      saveLocalPokes(nextCount);
+      setTotals({ lifetime: nextCount, monthly: 0, month: "local" });
+      setState("local");
+      setAnnouncement(`${nextFeedback.text}. Poke saved in this browser.`);
+      return;
+    }
+
+    setTotals((current) => {
+      if (!current) return nextTotals;
+      return {
+        ...nextTotals,
+        lifetime: Math.max(current.lifetime, nextTotals.lifetime),
+        monthly: Math.max(current.monthly, nextTotals.monthly),
+      };
+    });
+    setAnnouncement(`${nextFeedback.text}. ${nextTotals.lifetime} total hits.`);
   }
 
-  const unavailable = state === "unavailable";
-  const disabled = state !== "success" || coolingDown;
-  const totalLabel = state === "success" ? totals?.lifetime : unavailable ? "Unavailable" : "…";
-  const monthLabel = state === "success" ? totals?.monthly : unavailable ? "Unavailable" : "Loading";
+  const disabled = state === "loading";
+  const totalLabel = state === "loading" ? "…" : totals?.lifetime;
 
   return (
     <div className="sidebar-hit">
+      <AnimatePresence initial={false} mode="wait">
+        {feedback && (
+          <motion.div
+            className="hit-feedback hit-feedback--burst"
+            exit={{ opacity: 0, y: -38, scale: 0.92, filter: "blur(3px)" }}
+            initial={{ opacity: 0, y: 9, scale: 0.9, filter: "blur(2px)" }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              y: [9, -2, -10, -35],
+              scale: [0.9, 1, 1, 0.96],
+              filter: ["blur(2px)", "blur(0px)", "blur(0px)", "blur(2px)"],
+            }}
+            transition={{ duration: 1.05, times: [0, 0.18, 0.58, 1], ease: "easeOut" }}
+            key={`feedback-${feedback.id}`}
+            role="status"
+          >
+            <motion.span
+              className="poke-mascot"
+              aria-label="Poke mascot"
+              role="img"
+              animate={{ rotate: [0, -10, 8, 0], y: [0, -4, 0] }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            >
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M8 12 5.5 6.5 13 9M24 12l2.5-5.5L19 9" />
+                <path d="M7 14c0-5 4-8 9-8s9 3 9 8v7c0 4-4 6-9 6s-9-2-9-6z" />
+                <path d="M12 17h.01M20 17h.01M13 21c1.7 1.5 4.3 1.5 6 0" />
+              </svg>
+            </motion.span>
+            <span>{feedback.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <button
-        className={`hit-button${isHit ? " is-hit" : ""}`}
+        className="hit-button outline-action"
         type="button"
         onClick={hit}
         disabled={disabled}
         aria-label="Hit me with a hammer"
       >
-        <span className="hit-button-hammer" aria-hidden="true">
+        <span
+          className={`hit-button-hammer${pulse ? " is-animating" : ""}`}
+          key={`hammer-${pulse}`}
+          aria-hidden="true"
+        >
           <NavIcons.hammer />
         </span>
         <span className="hit-button-copy">
-          <span>Hit me</span>
-          <span className="hit-button-total">{totalLabel}</span>
+          <span>Poke me</span>
+          <span className="hit-button-total" key={`total-${totalLabel}`}>{totalLabel}</span>
         </span>
-        {isHit && <span className="hit-button-pop" aria-hidden="true">+1</span>}
-        <span className="hit-button-impact" aria-hidden="true" />
+        <span
+          className={`hit-button-impact${pulse ? " is-animating" : ""}`}
+          key={`impact-${pulse}`}
+          aria-hidden="true"
+        />
       </button>
-      <p className="hit-month">Hit this month · {monthLabel}</p>
+      <p className="hit-month">
+        {state === "local" ? (
+          <><span className="hit-mode">Local</span> · saved in this browser</>
+        ) : state === "success" ? (
+          <>This month · {totals?.monthly}</>
+        ) : (
+          <>Loading activity…</>
+        )}
+      </p>
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>

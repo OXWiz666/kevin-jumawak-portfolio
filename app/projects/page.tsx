@@ -7,10 +7,11 @@ export default function ProjectsPage() {
     <Page>
       <PageHeader
         back={{ href: "/", label: "Home" }}
-        title="Projects"
-        intro="A selection of applications and products I’m currently building."
+        eyebrow="Selected work / 2026"
+        title="Products, platforms, and useful software."
+        intro="A focused archive of live products, completed systems, and ideas currently taking shape."
       />
-      <section className="stack-v gap-16">
+      <section className="projects-archive">
         <div className="section-head">
           <h2 className="label">Selected work</h2>
           <span className="count">

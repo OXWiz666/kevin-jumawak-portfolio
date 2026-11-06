@@ -7,11 +7,11 @@ export default function ExperiencePage() {
     <Page>
       <PageHeader
         back={{ href: "/", label: "Home" }}
-        title="Experience"
-        intro="Professional experience and education details currently available for publication."
+        eyebrow="Experience / 02 roles"
+        title="Building products and supporting systems."
+        intro="Hands-on experience across full-stack product work, technical operations, and practical IT support."
       />
-      <section className="stack-v gap-16">
-        <h2 className="label">Roles</h2>
+      <section>
         <ExperienceList entries={WORK} />
       </section>
     </Page>

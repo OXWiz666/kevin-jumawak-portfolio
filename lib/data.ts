@@ -10,8 +10,8 @@ export const AVATAR_URL = "/images/kevin-jumawak-avatar.jfif";
 export const RESUME_URL = "/documents/KevinJumawak-Resume.docx";
 
 export const HEADLINE = {
-  lead: "I build software that solves",
-  emphasis: "real problems.",
+  lead: "I turn complex ideas into",
+  emphasis: "useful software.",
 };
 export const INTRO =
   "I’m a full-stack developer and software engineer focused on modern SaaS products, intelligent automations, and community-focused platforms.";
@@ -38,15 +38,21 @@ export const WORK: WorkEntry[] = [
   {
     role: "Full-Stack Developer",
     period: "May 2026–Present",
-    details: [],
-    tags: [],
+    details: [
+      "Designing and developing ForgeKeep across product interfaces, backend services, data workflows, and platform integrations.",
+      "Maintaining deployment workflows and the systems that support day-to-day guild operations.",
+    ],
+    tags: ["Next.js", "TypeScript", "PostgreSQL", "Supabase", "Discord"],
   },
   {
     role: "MIS Intern",
     organization: "STI College General Santos",
     period: "January–May 2026",
-    details: [],
-    tags: [],
+    details: [
+      "Supported day-to-day technical operations through troubleshooting, device maintenance, and user assistance.",
+      "Worked with operating systems, networking, hardware, and practical IT support workflows.",
+    ],
+    tags: ["IT support", "Networking", "Hardware", "Operating systems"],
   },
 ];
 
@@ -86,7 +92,13 @@ export const STACK: StackGroup[] = [
   },
 ];
 
-export type ProjectStatus = "active" | "in-development";
+export type ProjectStatus = "active" | "in-development" | "completed" | "concept";
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  active: "Live",
+  "in-development": "In Development",
+  completed: "Completed",
+  concept: "Concept",
+};
 export type ProjectSection = {
   title: string;
   paragraphs: string[];
@@ -106,10 +118,6 @@ export type Project = {
   sections: ProjectSection[];
 };
 
-const unavailable = (title: string): ProjectSection => ({
-  title,
-  paragraphs: ["Not publicly available yet."],
-});
 export const PROJECTS: Project[] = [
   {
     slug: "forgekeep",
@@ -133,118 +141,133 @@ export const PROJECTS: Project[] = [
       {
         title: "Overview",
         paragraphs: [
-          "ForgeKeep is an MMORPG guild operations platform for boss schedules, attendance, member management, loot, inventory, DKP, accounting, and Discord operations.",
+          "ForgeKeep is a SaaS-based MMORPG guild management platform built to bring complex guild operations into one clear, dependable workspace.",
         ],
       },
       {
-        title: "Problem",
+        title: "The coordination problem",
         paragraphs: [
-          "Guild administration brings recurring schedules, member participation, loot records, inventory, and financial tracking into one operational workflow.",
+          "Running a competitive guild means coordinating recurring schedules, participation records, loot decisions, inventory, and accounting across disconnected spreadsheets, chats, and tools.",
         ],
       },
       {
-        title: "Solution",
+        title: "A unified operating system",
         paragraphs: [
-          "ForgeKeep brings those guild workflows together in a dedicated platform, with automation and Discord operations supporting day-to-day coordination.",
+          "The product centralizes member management, boss scheduling, attendance, DKP bidding, loot distribution, inventory, accounting, and Discord-connected workflows.",
         ],
       },
       {
-        title: "Technical architecture",
+        title: "Core capabilities",
         paragraphs: [
-          "The verified development stack includes Next.js and TypeScript on the application side, with Supabase, PostgreSQL, Prisma, and Hono.js supporting the product. Further internal architecture details are not publicly documented.",
-        ],
-      },
-      {
-        title: "Features",
-        paragraphs: [
-          "Core guild operations are represented as connected tools rather than separate spreadsheets or messages.",
+          "Connected tools keep guild leaders and members working from the same source of truth.",
         ],
         items: [
-          "Boss schedules and attendance tracking",
-          "Member, loot, and inventory management",
-          "DKP and accounting workflows",
-          "Discord operations and real-time data synchronization",
+          "MMORPG guild and faction management",
+          "Boss schedules, timers, and attendance tracking",
+          "DKP bidding and loot distribution",
+          "Guild inventory and accounting",
+          "Discord bot integrations",
           "OCR-supported attendance automation",
+          "Multi-game management support",
         ],
       },
-      unavailable("Engineering challenges"),
-      unavailable("Lessons learned"),
     ],
   },
   {
     slug: "forgekeep-wallet",
     title: "ForgeKeep Wallet",
-    category: "Product feature",
+    category: "Finance product",
     status: "in-development",
-    summary: "An in-development ForgeKeep project.",
+    summary: "A financial management component for the ForgeKeep ecosystem.",
     images: [],
-    technologies: [],
+    technologies: ["Next.js", "TypeScript", "Supabase"],
     sections: [
-      unavailable("Overview"),
-      unavailable("Problem"),
-      unavailable("Solution"),
-      unavailable("Technical architecture"),
-      unavailable("Features"),
-      unavailable("Engineering challenges"),
-      unavailable("Lessons learned"),
-      unavailable("Screenshots"),
+      {
+        title: "Overview",
+        paragraphs: [
+          "ForgeKeep Wallet extends the platform with focused financial-management workflows for the wider ForgeKeep ecosystem. The product is currently in development.",
+        ],
+      },
     ],
   },
   {
     slug: "rural-health-unit-management-system",
     title: "Rural Health Unit Management System",
-    category: "Management system",
-    status: "active",
-    summary: "A portfolio project with details not publicly available.",
+    category: "Healthcare system",
+    status: "completed",
+    summary: "A rural health unit system for patient records, appointments, EMR, inventory, and reporting.",
     images: [],
-    technologies: [],
+    technologies: ["Laravel", "Inertia.js", "MySQL"],
     sections: [
-      unavailable("Overview"),
-      unavailable("Problem"),
-      unavailable("Solution"),
-      unavailable("Technical architecture"),
-      unavailable("Features"),
-      unavailable("Engineering challenges"),
-      unavailable("Lessons learned"),
-      unavailable("Screenshots"),
+      {
+        title: "Overview",
+        paragraphs: [
+          "RHUMS organizes the day-to-day information handled by a rural health unit into one management system, giving staff a clearer way to work with patient and operational records.",
+        ],
+      },
+      {
+        title: "Core capabilities",
+        paragraphs: ["The system connects essential clinical and administrative workflows."],
+        items: [
+          "Patient records and electronic medical records",
+          "Appointment scheduling",
+          "Medicine and supply inventory",
+          "Operational reports",
+        ],
+      },
     ],
   },
   {
     slug: "sportscity",
     title: "SportsCity",
-    category: "Platform",
-    status: "active",
-    summary: "A portfolio project with details not publicly available.",
+    category: "Community platform",
+    status: "completed",
+    summary: "A sports facility and league platform for reservations, tournaments, schedules, and standings.",
     images: [],
-    technologies: [],
+    technologies: ["React", "Laravel", "Inertia.js", "MySQL"],
     sections: [
-      unavailable("Overview"),
-      unavailable("Problem"),
-      unavailable("Solution"),
-      unavailable("Technical architecture"),
-      unavailable("Features"),
-      unavailable("Engineering challenges"),
-      unavailable("Lessons learned"),
-      unavailable("Screenshots"),
+      {
+        title: "Overview",
+        paragraphs: [
+          "SportsCity brings facility operations and community competition into one role-based platform for organizers, staff, teams, and players.",
+        ],
+      },
+      {
+        title: "Core capabilities",
+        paragraphs: ["The platform supports both venue operations and league activity."],
+        items: [
+          "Facility reservations",
+          "Tournament and league scheduling",
+          "Standings and competition records",
+          "Role-based dashboards",
+        ],
+      },
     ],
   },
   {
     slug: "draftiq",
     title: "DraftIQ",
-    category: "Application",
-    status: "in-development",
-    summary: "An in-development portfolio project.",
+    category: "AI companion",
+    status: "concept",
+    summary: "A Dota 2 companion concept for draft analysis and intelligent hero recommendations.",
     images: [],
-    technologies: [],
+    technologies: ["Next.js", "TypeScript", "AI / LLM"],
     sections: [
-      unavailable("Overview"),
-      unavailable("Problem"),
-      unavailable("Solution"),
-      unavailable("Technical architecture"),
-      unavailable("Features"),
-      unavailable("Engineering challenges"),
-      unavailable("Lessons learned"),
-      unavailable("Screenshots"),
+      {
+        title: "Overview",
+        paragraphs: [
+          "DraftIQ explores how structured match context and intelligent recommendations could support better drafting decisions in Dota 2.",
+        ],
+      },
+      {
+        title: "Concept focus",
+        paragraphs: ["The concept concentrates on a small set of useful draft-time decisions."],
+        items: [
+          "Draft composition analysis",
+          "Context-aware hero recommendations",
+          "Clear explanations for suggested picks",
+        ],
+      },
     ],
   },
 ];
